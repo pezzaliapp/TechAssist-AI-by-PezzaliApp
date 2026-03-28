@@ -64,7 +64,8 @@
 
     .typing .bubble { display:flex; align-items:center; gap:5px; padding:14px 17px; }
     .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); animation:bounce 1.1s infinite; }
-    .dot:nth-child(2){animation-delay:.18s} .dot:nth-child(3){animation-delay:.36s}
+    .dot:nth-child(2){animation-delay:.18s}
+    .dot:nth-child(3){animation-delay:.36s}
     @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
 
     .suggestions { display:flex; flex-wrap:wrap; gap:8px; padding:2px 0; }
@@ -105,7 +106,11 @@
     footer { text-align:center; padding:8px 16px 12px; font-size:10px; color:var(--muted); flex-shrink:0; }
     footer a { color:var(--accent); text-decoration:none; }
 
-    @media(max-width:520px){ .msg{max-width:91%} .bubble{font-size:13px} .powered{display:none} }
+    @media(max-width:520px){
+      .msg{max-width:91%}
+      .bubble{font-size:13px}
+      .powered{display:none}
+    }
   </style>
 </head>
 <body>
@@ -127,17 +132,20 @@
     <strong>Demo locale senza API.</strong><br>
     Supporto demo su equilibratrici Cormach: diagnosi rapida, calibrazione e procedure operative, direttamente nel browser.
   </div>
+
   <div class="msg ai">
     <div class="bubble">Ciao! Sono TechAssist Demo.
 
 Indicami modello e problema. Questa versione demo lavora in locale e segue regole tecniche preimpostate per le equilibratrici Cormach supportate.</div>
     <span class="msg-time" id="welcome-time"></span>
   </div>
+
   <div class="suggestions" id="suggestions">
-  <button class="sugg" onclick="sendSugg('Come si calibra la MEC 820?')">Calibrazione MEC 820</button>
-  <button class="sugg" onclick="sendSugg('La MEC 20 richiede troppi pesi. Cosa controllo?')">Troppi pesi MEC 20</button>
-  <button class="sugg" onclick="sendSugg('Come entro in modalità servizio sulla MEC 10?')">Modalità servizio MEC 10</button>
-  <button class="sugg" onclick="sendSugg('Err 025 su MEC 5 durante calibrazione')">Errore Err 025</button>
+    <button class="sugg" onclick="sendSugg('Come si calibra la MEC 820?')">Calibrazione MEC 820</button>
+    <button class="sugg" onclick="sendSugg('La MEC 20 richiede troppi pesi. Cosa controllo?')">Troppi pesi MEC 20</button>
+    <button class="sugg" onclick="sendSugg('Come entro in modalità servizio sulla MEC 10?')">Modalità servizio MEC 10</button>
+    <button class="sugg" onclick="sendSugg('Err 025 su MEC 5 durante calibrazione')">Errore Err 025</button>
+  </div>
 </div>
 
 <div class="input-wrap">
@@ -151,13 +159,12 @@ Indicami modello e problema. Questa versione demo lavora in locale e segue regol
 </div>
 
 <footer>
-  <a href="https://pezzaliapp.com" target="_blank" rel="noopener">pezzaliapp.com</a> · TechAssist Demo v2.0
+  <a href="https://pezzaliapp.com" target="_blank" rel="noopener">pezzaliapp.com</a> · TechAssist Demo v3.0
 </footer>
 
 <script>
 /* ==================================================
-   TECHASSIST DEMO - MOTORE LOCALE COMPLETO
-   Nessuna API - nessun costo - logica deterministica
+   TECHASSIST DEMO - MOTORE LOCALE PRO
 ================================================== */
 
 const MODELLI = [
@@ -182,51 +189,63 @@ const memoria = {
   modello: null,
   problema: null,
   matricola: null,
-  ultimoIntent: null
+  ultimoIntent: null,
+  pendingIntent: null,
+  pendingText: null
 };
 
 let isLoading = false;
 
-const chatEl    = document.getElementById('chat');
-const inputEl   = document.getElementById('userInput');
-const sendBtn   = document.getElementById('sendBtn');
-const suggestEl = document.getElementById('suggestions');
-const statusLbl = document.getElementById('statusLbl');
+const chatEl = document.getElementById("chat");
+const inputEl = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const suggestEl = document.getElementById("suggestions");
+const statusLbl = document.getElementById("statusLbl");
 
-document.getElementById('welcome-time').textContent = hhmm();
+document.getElementById("welcome-time").textContent = hhmm();
 
-inputEl.addEventListener('input', () => {
-  inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + 'px';
+inputEl.addEventListener("input", () => {
+  inputEl.style.height = "auto";
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + "px";
 });
 
-inputEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
+inputEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
   }
 });
 
-window.addEventListener('online',  () => { statusLbl.textContent='Online'; statusLbl.style.color=''; });
-window.addEventListener('offline', () => { statusLbl.textContent='Offline'; statusLbl.style.color='#e17055'; });
+window.addEventListener("online", () => {
+  statusLbl.textContent = "Online";
+  statusLbl.style.color = "";
+});
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+window.addEventListener("offline", () => {
+  statusLbl.textContent = "Offline";
+  statusLbl.style.color = "#e17055";
+});
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
 
 function hhmm() {
-  return new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
+  return new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 }
 
 function addMsg(role, text) {
-  const wrap = document.createElement('div');
+  const wrap = document.createElement("div");
   wrap.className = `msg ${role}`;
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble';
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
   bubble.textContent = text;
-  const time = document.createElement('span');
-  time.className = 'msg-time';
+
+  const time = document.createElement("span");
+  time.className = "msg-time";
   time.textContent = hhmm();
+
   wrap.appendChild(bubble);
   wrap.appendChild(time);
   chatEl.appendChild(wrap);
@@ -234,21 +253,21 @@ function addMsg(role, text) {
 }
 
 function showTyping() {
-  const w = document.createElement('div');
-  w.className = 'msg ai typing';
-  w.id = 'typing';
+  const w = document.createElement("div");
+  w.className = "msg ai typing";
+  w.id = "typing";
   w.innerHTML = `<div class="bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
   chatEl.appendChild(w);
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
 function removeTyping() {
-  const t = document.getElementById('typing');
+  const t = document.getElementById("typing");
   if (t) t.remove();
 }
 
 function sendSugg(text) {
-  suggestEl.style.display = 'none';
+  suggestEl.style.display = "none";
   inputEl.value = text;
   sendMessage();
 }
@@ -256,7 +275,7 @@ function sendSugg(text) {
 function normalizeText(text) {
   return text
     .toUpperCase()
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -267,17 +286,17 @@ function extractMatricola(text) {
 
 function detectModel(text) {
   const normalized = normalizeText(text);
-
   const ordered = [...MODELLI].sort((a, b) => b.length - a.length);
+
   for (const model of ordered) {
     if (normalized.includes(model)) return model;
   }
 
-  if (/\bMEC\b/.test(normalized) && memoria.modello) {
-    return memoria.modello;
-  }
-
   return null;
+}
+
+function hasBareMec(text) {
+  return /\bMEC\b/i.test(text);
 }
 
 function isManagedModel(model) {
@@ -297,11 +316,19 @@ function isServiceModeIntent(text) {
 }
 
 function isSupportContactIntent(text) {
-  return /(assistenza|contatto tecnico|intervento|chiamata tecnica|supporto diretto|service)/i.test(text);
+  return /(assistenza|contatto tecnico|intervento|chiamata tecnica|supporto diretto)/i.test(text);
 }
 
-function isQuickDiagnosisIntent(text) {
-  return /(troppi pesi|misura errata|valori strani|vibrazioni|vibra|peso troppo|pesi troppo alti|errore|err 025|err025)/i.test(text);
+function isTroppiPesiIntent(text) {
+  return /(troppi pesi|peso troppo|pesi troppo alti|chiama troppi pesi|richiede troppi pesi|molti pesi|troppi grammi)/i.test(text);
+}
+
+function isVibrazioniIntent(text) {
+  return /(vibrazioni|vibra|valori strani|misura errata|misure errate|lettura errata|dato errato|dati errati)/i.test(text);
+}
+
+function isErr025Intent(text) {
+  return /err\s*0?25/i.test(text);
 }
 
 function isConfirmText(text) {
@@ -326,6 +353,16 @@ Indicando:
 - nazione
 
 Il servizio tecnico la ricontatterà direttamente.`;
+}
+
+function richiestaModello() {
+  return `Per aiutarti correttamente ho bisogno del modello della equilibratrice.
+
+Indica ad esempio:
+- MEC 10
+- MEC 20
+- MEC 820
+- Touch MEC 1000`;
 }
 
 function rispostaCommerciale() {
@@ -425,10 +462,15 @@ Uscita anticipata:
 - premere P5`;
 }
 
+function getCalibrationByModel(model) {
+  if (!model) return richiestaModello();
+  if (MODELLI_SENZA_MONITOR.includes(model)) return calibrazioneSenzaMonitor(model);
+  if (MODELLI_MONITOR.includes(model) || MODELLI_TOUCH.includes(model)) return calibrazioneMonitor(model);
+  return modelloNonGestito();
+}
+
 function modalitaServizio(model) {
-  if (!model) {
-    return `Indica il modello preciso della equilibratrice Cormach e ti do la procedura corretta.`;
-  }
+  if (!model) return richiestaModello();
 
   if (MODELLI_SENZA_MONITOR.includes(model)) {
     return `Per entrare in modalità servizio su ${model}:
@@ -452,7 +494,7 @@ Per queste versioni la gestione è guidata da display. Entra dal menu programmi 
 }
 
 function diagnosiTroppiPesi(model) {
-  return `Su ${model || 'questa equilibratrice'} controlla in ordine:
+  return `Su ${model} controlla in ordine:
 
 - centraggio ruota
 - cono corretto
@@ -464,14 +506,29 @@ function diagnosiTroppiPesi(model) {
 - assenza pesi residui
 
 Se continua a richiedere troppi pesi, verifica anche il matching:
-smonta il pneumatico e valuta di ruotarlo sul cerchio per compensare meglio pneumatico e cerchio.
+prova a girare il pneumatico sul cerchio per compensare meglio pneumatico e cerchio.
 
 Se tutto è corretto:
 possibile necessità di calibrazione.`;
 }
 
+function diagnosiVibrazioniMisura(model) {
+  return `Su ${model} controlla:
+
+- centraggio ruota
+- cono corretto
+- adattatore o flangia
+- pulizia albero e battute
+- corretto inserimento di distanza, larghezza e diametro
+- eventuali pesi vecchi sul cerchio
+
+Se tutto è corretto:
+- esegui la calibrazione
+- se necessario gira il pneumatico sul cerchio e ripeti il controllo`;
+}
+
 function diagnosiErr025(model) {
-  return `Su ${model || 'questa MEC'} l'Err 025 richiede di ripetere le verifiche base della calibrazione.
+  return `Su ${model} l'Err 025 richiede di ripetere le verifiche base della calibrazione.
 
 Controlla:
 - ruota campione corretta
@@ -496,83 +553,109 @@ Posso aiutarti con:
 Scrivi il sintomo in modo diretto.`;
 }
 
-function getCalibrationByModel(model) {
-  if (!model) return `Indica il modello preciso della macchina e ti fornisco la procedura completa.`;
-  if (MODELLI_SENZA_MONITOR.includes(model)) return calibrazioneSenzaMonitor(model);
-  if (MODELLI_MONITOR.includes(model) || MODELLI_TOUCH.includes(model)) return calibrazioneMonitor(model);
-  return modelloNonGestito();
+function inferIntent(text) {
+  if (isCommercialIntent(text)) return "commerciale";
+  if (isCalibrationIntent(text)) return "calibrazione";
+  if (isServiceModeIntent(text)) return "modalita_servizio";
+  if (isSupportContactIntent(text)) return "assistenza";
+  if (isErr025Intent(text)) return "err025";
+  if (isTroppiPesiIntent(text)) return "troppi_pesi";
+  if (isVibrazioniIntent(text)) return "diagnosi_rapida";
+  return null;
+}
+
+function answerByIntent(intent, model) {
+  switch (intent) {
+    case "commerciale":
+      memoria.ultimoIntent = "commerciale";
+      return rispostaCommerciale();
+    case "calibrazione":
+      memoria.ultimoIntent = "calibrazione";
+      return getCalibrationByModel(model);
+    case "modalita_servizio":
+      memoria.ultimoIntent = "modalita_servizio";
+      return modalitaServizio(model);
+    case "assistenza":
+      memoria.ultimoIntent = "assistenza";
+      return rispostaContattoAssistenza();
+    case "err025":
+      memoria.ultimoIntent = "err025";
+      return diagnosiErr025(model);
+    case "troppi_pesi":
+      memoria.ultimoIntent = "troppi_pesi";
+      return diagnosiTroppiPesi(model);
+    case "diagnosi_rapida":
+      memoria.ultimoIntent = "diagnosi_rapida";
+      return diagnosiVibrazioniMisura(model);
+    default:
+      memoria.ultimoIntent = "generico";
+      return rispostaGenericaConModello(model);
+  }
 }
 
 function engine(text) {
   const clean = text.trim();
   const modelFound = detectModel(clean);
+  const bareMec = hasBareMec(clean);
   const matricolaFound = extractMatricola(clean);
+  const intent = inferIntent(clean);
 
   if (matricolaFound) memoria.matricola = matricolaFound;
-  if (modelFound) memoria.modello = modelFound;
   if (clean.length > 1) memoria.problema = clean;
+
+  if (modelFound) {
+    memoria.modello = modelFound;
+  }
 
   const model = modelFound || memoria.modello;
 
-  if (isCommercialIntent(clean)) {
-    memoria.ultimoIntent = 'commerciale';
-    return rispostaCommerciale();
+  if (intent === "commerciale") {
+    memoria.pendingIntent = null;
+    memoria.pendingText = null;
+    return answerByIntent(intent, model);
+  }
+
+  if (bareMec && !modelFound && !memoria.modello) {
+    memoria.pendingIntent = intent;
+    memoria.pendingText = clean;
+    return richiestaModello();
+  }
+
+  if (!model && intent && intent !== "assistenza") {
+    memoria.pendingIntent = intent;
+    memoria.pendingText = clean;
+    memoria.ultimoIntent = "richiesta_modello";
+    return richiestaModello();
   }
 
   if (modelFound && !isManagedModel(modelFound)) {
-    memoria.ultimoIntent = 'modello_non_gestito';
+    memoria.pendingIntent = null;
+    memoria.pendingText = null;
+    memoria.ultimoIntent = "modello_non_gestito";
     return modelloNonGestito();
   }
 
-  if (!model && !isSupportContactIntent(clean)) {
-    memoria.ultimoIntent = 'modello_assente';
-    return modelloNonGestito();
+  if (!intent && model && memoria.pendingIntent) {
+    const pending = memoria.pendingIntent;
+    memoria.pendingIntent = null;
+    memoria.pendingText = null;
+    return answerByIntent(pending, model);
   }
 
-  if (isSupportContactIntent(clean)) {
-    memoria.ultimoIntent = 'assistenza';
-    return rispostaContattoAssistenza();
-  }
-
-  if (isCalibrationIntent(clean)) {
-    memoria.ultimoIntent = 'calibrazione';
-    return getCalibrationByModel(model);
-  }
-
-  if (isServiceModeIntent(clean)) {
-    memoria.ultimoIntent = 'modalita_servizio';
-    return modalitaServizio(model);
-  }
-
-  if (/err\s*0?25/i.test(clean)) {
-    memoria.ultimoIntent = 'err025';
-    return diagnosiErr025(model);
-  }
-
-  if (/troppi pesi|peso troppo|pesi troppo alti/i.test(clean)) {
-    memoria.ultimoIntent = 'troppi_pesi';
-    return diagnosiTroppiPesi(model);
-  }
-
-  if (/vibrazioni|vibra|misura errata|valori strani|errore/i.test(clean)) {
-    memoria.ultimoIntent = 'diagnosi_rapida';
-    return diagnosiTroppiPesi(model);
+  if (intent) {
+    memoria.pendingIntent = null;
+    memoria.pendingText = null;
+    return answerByIntent(intent, model);
   }
 
   if (isConfirmText(clean) && memoria.ultimoIntent) {
-    switch (memoria.ultimoIntent) {
-      case 'calibrazione':
-        return getCalibrationByModel(model);
-      case 'troppi_pesi':
-      case 'diagnosi_rapida':
-        return diagnosiTroppiPesi(model);
-      case 'modalita_servizio':
-        return modalitaServizio(model);
-      case 'assistenza':
-        return rispostaContattoAssistenza();
-      default:
-        return rispostaGenericaConModello(model);
-    }
+    return answerByIntent(memoria.ultimoIntent, model || memoria.modello);
+  }
+
+  if (!model && !intent) {
+    memoria.pendingIntent = null;
+    memoria.pendingText = null;
+    return richiestaModello();
   }
 
   return rispostaGenericaConModello(model);
@@ -582,10 +665,10 @@ async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text || isLoading) return;
 
-  suggestEl.style.display = 'none';
-  addMsg('user', text);
-  inputEl.value = '';
-  inputEl.style.height = 'auto';
+  suggestEl.style.display = "none";
+  addMsg("user", text);
+  inputEl.value = "";
+  inputEl.style.height = "auto";
 
   isLoading = true;
   sendBtn.disabled = true;
@@ -594,11 +677,11 @@ async function sendMessage() {
   setTimeout(() => {
     const reply = engine(text);
     removeTyping();
-    addMsg('ai', reply);
+    addMsg("ai", reply);
     isLoading = false;
     sendBtn.disabled = false;
     inputEl.focus();
-  }, 250);
+  }, 220);
 }
 </script>
 </body>
