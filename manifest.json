@@ -1,28 +1,12 @@
 {
   "name": "TechAssist AI by PezzaliApp",
   "short_name": "TechAssist AI",
-  "description": "Assistente tecnico AI per officine e gommisti. Diagnosi, calibrazione, supporto operativo.",
-  "start_url": "/techassist-ai/",
-  "scope": "/techassist-ai/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#00b894",
-  "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["business", "utilities"],
-  "lang": "it",
-  "author": "PezzaliApp – pezzaliapp.com"
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
 }
