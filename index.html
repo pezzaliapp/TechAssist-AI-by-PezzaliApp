@@ -396,12 +396,14 @@ async function sendMessage() {
   history.push({ role: 'user', parts: [{ text }] });
 
   try {
-    const res = await fetch(WORKER_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // Inviamo solo la history — il system prompt lo inietta il Worker
-      body: JSON.stringify({ contents: history })
-    });
+    const res = await fetch(GEMINI_URL, {
+  method:  'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    contents: history,
+    generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+  })
+});
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data  = await res.json();
