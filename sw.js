@@ -4,9 +4,7 @@ const PRECACHE = [
   "./",
   "./index.html",
   "./offline.html",
-  "./manifest.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./manifest.json"
 ];
 
 self.addEventListener("install", e => {
@@ -26,27 +24,20 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
 
-  // Chiamate al Worker Cloudflare: sempre rete, mai cache
-  if (url.hostname.includes("workers.dev")) return;
+  // Passa tutto ciò che non è GET senza intercettare (POST al Worker incluso)
+  if (e.request.method !== "GET") return;
 
-  // Google Fonts: network con fallback cache
-  if (url.hostname.includes("fonts.google") || url.hostname.includes("fonts.gstatic")) {
-    e.respondWith(
-      fetch(e.request).then(res => {
-        caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-        return res;
-      }).catch(() => caches.match(e.request))
-    );
-    return;
-  }
+  // Passa tutte le chiamate esterne senza intercettare
+  if (url.origin !== self.location.origin) return;
 
-  // Assets locali: cache-first
+  // Cache-first solo per assets locali
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(res => {
-        if (res && res.status === 200) {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        if (res && res.status === 200 && res.type === "basic") {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
       }).catch(() => caches.match("./offline.html"));
