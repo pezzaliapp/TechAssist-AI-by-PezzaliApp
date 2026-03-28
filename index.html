@@ -156,41 +156,60 @@ Indicami modello e problema. Questa versione demo lavora in locale e segue regol
 </footer>
 
 <script>
-const SUPPORTED_MODELS = [
-  'MEC 5', 'MEC 10', 'MEC 20', 'MEC 20-P',
-  'MEC 810', 'MEC 810 VDBL ESD', 'MEC 820', 'MEC 820 VDL', 'MEC 820 VDLL',
-  'TOUCH MEC 1000', 'TOUCH MEC 1000-P'
+/* ==================================================
+   TECHASSIST DEMO - MOTORE LOCALE COMPLETO
+   Nessuna API - nessun costo - logica deterministica
+================================================== */
+
+const MODELLI = [
+  "MEC 5",
+  "MEC 10",
+  "MEC 20",
+  "MEC 20-P",
+  "MEC 810",
+  "MEC 810 VDBL ESD",
+  "MEC 820",
+  "MEC 820 VDL",
+  "MEC 820 VDLL",
+  "TOUCH MEC 1000",
+  "TOUCH MEC 1000-P"
 ];
 
-const SALES_KEYWORDS = ['preventivo', 'prezzo', 'acquisto', 'acquistare', 'vendita', 'comprare', 'offerta', 'costo', 'commerciale'];
-const CALIBRATION_KEYWORDS = ['calibrazione', 'calibrare', 'taratura', 'tarare'];
-const CONTACT_KEYWORDS = ['assistenza diretta', 'intervento', 'chiamata', 'contatto tecnico', 'tecnico'];
-const DIAGNOSIS_KEYWORDS = ['troppi pesi', 'misura errata', 'valori strani', 'vibrazioni', 'vibra'];
-const ERR025_KEYWORDS = ['err 025', 'errore 025', 'err025'];
-const SERVICE_MODE_KEYWORDS = ['modalità servizio', 'modo servizio', 'service mode'];
+const MODELLI_SENZA_MONITOR = ["MEC 5", "MEC 10", "MEC 20", "MEC 20-P"];
+const MODELLI_MONITOR = ["MEC 810", "MEC 810 VDBL ESD", "MEC 820", "MEC 820 VDL", "MEC 820 VDLL"];
+const MODELLI_TOUCH = ["TOUCH MEC 1000", "TOUCH MEC 1000-P"];
 
-const context = {
-  model: '',
-  problem: '',
-  serial: '',
-  symptoms: ''
+const memoria = {
+  modello: null,
+  problema: null,
+  matricola: null,
+  ultimoIntent: null
 };
+
+let isLoading = false;
 
 const chatEl    = document.getElementById('chat');
 const inputEl   = document.getElementById('userInput');
 const sendBtn   = document.getElementById('sendBtn');
 const suggestEl = document.getElementById('suggestions');
+const statusLbl = document.getElementById('statusLbl');
 
 document.getElementById('welcome-time').textContent = hhmm();
-restoreContext();
 
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
   inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + 'px';
 });
+
 inputEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
 });
+
+window.addEventListener('online',  () => { statusLbl.textContent='Online'; statusLbl.style.color=''; });
+window.addEventListener('offline', () => { statusLbl.textContent='Offline'; statusLbl.style.color='#e17055'; });
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -217,7 +236,8 @@ function addMsg(role, text) {
 
 function showTyping() {
   const w = document.createElement('div');
-  w.className = 'msg ai typing'; w.id = 'typing';
+  w.className = 'msg ai typing';
+  w.id = 'typing';
   w.innerHTML = `<div class="bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
   chatEl.appendChild(w);
   chatEl.scrollTop = chatEl.scrollHeight;
@@ -234,53 +254,62 @@ function sendSugg(text) {
   sendMessage();
 }
 
-function normalize(text) {
+function normalizeText(text) {
   return text
     .toUpperCase()
     .replace(/\s+/g, ' ')
     .trim();
 }
 
+function extractMatricola(text) {
+  const m = text.match(/(?:matricola|seriale|serial number|s\/n)\s*[:#-]?\s*([A-Z0-9\-\/]+)/i);
+  return m ? m[1] : null;
+}
+
 function detectModel(text) {
-  const normalized = normalize(text);
-  for (const model of SUPPORTED_MODELS.sort((a, b) => b.length - a.length)) {
+  const normalized = normalizeText(text);
+
+  const ordered = [...MODELLI].sort((a, b) => b.length - a.length);
+  for (const model of ordered) {
     if (normalized.includes(model)) return model;
   }
-  if (normalized.includes('MEC 1000-P')) return 'TOUCH MEC 1000-P';
-  if (normalized.includes('MEC 1000')) return 'TOUCH MEC 1000';
-  return '';
-}
 
-function containsAny(text, keywords) {
-  const lowered = text.toLowerCase();
-  return keywords.some(keyword => lowered.includes(keyword));
-}
-
-function updateContext(text) {
-  const foundModel = detectModel(text);
-  if (foundModel) context.model = foundModel;
-
-  const serialMatch = text.match(/(?:matricola|seriale|s\/?n)\s*[:#-]?\s*([a-z0-9-]+)/i);
-  if (serialMatch) context.serial = serialMatch[1].trim();
-
-  if (!context.problem) context.problem = text.trim();
-  else if (text.trim().length > 10) context.problem = text.trim();
-
-  if (containsAny(text, DIAGNOSIS_KEYWORDS) || containsAny(text, ERR025_KEYWORDS)) {
-    context.symptoms = text.trim();
+  if (/\bMEC\b/.test(normalized) && memoria.modello) {
+    return memoria.modello;
   }
 
-  sessionStorage.setItem('techassist-demo-context', JSON.stringify(context));
+  return null;
 }
 
-function restoreContext() {
-  try {
-    const saved = JSON.parse(sessionStorage.getItem('techassist-demo-context') || '{}');
-    Object.assign(context, saved);
-  } catch (_) {}
+function isManagedModel(model) {
+  return MODELLI.includes(model);
 }
 
-function unsupportedReply() {
+function isCommercialIntent(text) {
+  return /(prezzo|preventivo|acquisto|comprare|vendita|offerta|quotazione|confronto|competitor)/i.test(text);
+}
+
+function isCalibrationIntent(text) {
+  return /(calibrazione|calibrare|taratura|tarare)/i.test(text);
+}
+
+function isServiceModeIntent(text) {
+  return /(modalità servizio|modalita servizio|service mode|entrare in servizio|modo servizio)/i.test(text);
+}
+
+function isSupportContactIntent(text) {
+  return /(assistenza|contatto tecnico|intervento|chiamata tecnica|supporto diretto|service)/i.test(text);
+}
+
+function isQuickDiagnosisIntent(text) {
+  return /(troppi pesi|misura errata|valori strani|vibrazioni|vibra|peso troppo|pesi troppo alti|errore|err 025|err025)/i.test(text);
+}
+
+function isConfirmText(text) {
+  return /^(ok|va bene|procedi|continua|dimmi|spiegami|come|e quindi|poi|cosa faccio)$/i.test(text.trim());
+}
+
+function modelloNonGestito() {
   return `Non risulta una equilibratrice Cormach gestita da questo supporto.
 
 Per ricevere assistenza, invii una mail a:
@@ -300,11 +329,11 @@ Indicando:
 Il servizio tecnico la ricontatterà direttamente.`;
 }
 
-function salesReply() {
-  return 'Per la parte commerciale ti metto in contatto con il reparto vendite. Io posso aiutarti solo sull’assistenza tecnica delle equilibratrici.';
+function rispostaCommerciale() {
+  return `Per la parte commerciale ti metto in contatto con il reparto vendite. Io posso aiutarti solo sull’assistenza tecnica delle equilibratrici.`;
 }
 
-function directSupportReply() {
+function rispostaContattoAssistenza() {
   return `Per l’assistenza diretta invii una mail a:
 
 service@cormachsrl.com
@@ -318,60 +347,16 @@ Indicando:
 Il reparto assistenza la ricontatterà.`;
 }
 
-function diagnosisChecklist(model) {
-  const modelLine = model ? `Modello rilevato: ${model}.\n\n` : '';
-  return `${modelLine}Controlla prima questi punti:
-- centraggio ruota
-- cono corretto
-- flangia o adattatore
-- albero pulito
-- battute pulite
-- macchina in piano
-- dati ruota corretti
-- assenza di pesi residui
-
-Se tutto è corretto, è possibile che serva la calibrazione.`;
-}
-
-function err025Reply(model) {
-  const intro = model ? `Su ${model} l'Err 025 indica che la procedura va ripetuta dopo le verifiche di base.\n\n` : 'Err 025: la procedura va ripetuta dopo le verifiche di base.\n\n';
-  return `${intro}Controlla:
-- ruota corretta per calibrazione
-- peso da 50 g reale
-- dati ruota inseriti correttamente
-- centraggio perfetto
-- battute e albero puliti
-
-Se l’errore resta, invia i dati a service@cormachsrl.com.`;
-}
-
-function serviceModeReply(model) {
-  if (['MEC 5', 'MEC 10', 'MEC 20', 'MEC 20-P'].includes(model)) {
-    return `Per entrare in modalità servizio su ${model}:
-1. Accendere la macchina
-2. Togliere ruota e accessori
-3. Premere F + P3
-4. Entrare in modalità servizio
-
-Per uscire: F + P3.`;
-  }
-  if (model) {
-    return `${model} usa una procedura guidata a display. Non va usata la combinazione tasti delle MEC senza monitor.
-
-Se mi scrivi l’operazione che devi fare, ti indico il percorso corretto.`;
-  }
-  return 'La modalità servizio con F + P3 vale solo per MEC 5, MEC 10, MEC 20 e MEC 20-P. Sulle versioni con monitor o touch si usa la procedura guidata a display.';
-}
-
-function calibrationNoMonitor(model) {
+function calibrazioneSenzaMonitor(model) {
   return `Procedura completa di calibrazione ${model}.
 
 Materiale necessario:
-- ruota equilibrata con cerchio acciaio 15" 
+- ruota equilibrata con cerchio acciaio 15"
 - larghezza 6"
 - distanza circa 100 mm
 - peso da 50 g
 
+Procedura:
 1. Accendere la macchina
 2. Togliere ruota e accessori
 3. Premere F + P3
@@ -379,25 +364,28 @@ Materiale necessario:
 5. Premere P3
 6. Selezionare calibrazione CAR/SUV
 7. Premere P3
-8. Abbassare carter e fare il lancio
+8. Abbassare carter → lancio
 9. Montare ruota
 10. Inserire dimensioni
-11. Abbassare carter e fare il lancio
-12. Ruotare fino a 50 lato sinistro
-13. Applicare 50 g interno ore 12
-14. Fare il lancio
-15. Togliere il peso
-16. Ruotare fino a 50 lato destro
-17. Applicare 50 g esterno ore 12
-18. Fare il lancio
-19. Su MEC 20 lasciare il carter abbassato
-20. Fine con ritorno automatico
+11. Abbassare carter → lancio
+12. Ruotare fino a 50 (sinistra)
+13. Applicare 50g interno ore 12
+14. Lancio
+15. Togliere peso
+16. Ruotare fino a 50 (destra)
+17. Applicare 50g esterno ore 12
+18. Lancio
+19. Su MEC 20 lasciare carter abbassato
+20. Fine → ritorno automatico
 
-Errore Err 025: ripetere dopo le verifiche.
-Uscita: F + P3.`;
+Errore:
+- Err 025 → ripetere verifiche
+
+Uscita:
+- F + P3`;
 }
 
-function calibrationMonitor(model) {
+function calibrazioneMonitor(model) {
   return `Procedura completa di calibrazione ${model}.
 
 Materiale necessario:
@@ -406,123 +394,212 @@ Materiale necessario:
 - peso da 50 g
 - non usare cerchi in alluminio
 
+Procedura:
 1. Accedere al menu programmi
 2. Selezionare calibrazione CAR/SUV
 3. Confermare
 4. Togliere ruota e accessori
-5. Abbassare carter e fare il lancio
+5. Abbassare carter → lancio
+
 6. Montare la ruota
-7. Inserire manualmente distanza, larghezza e diametro
-8. Abbassare carter e fare il lancio
+
+7. Inserire manualmente:
+- distanza
+- larghezza
+- diametro
+
+8. Abbassare carter → lancio
+
 9. Ruotare fino a 50 lato sinistro
-10. Applicare 50 g lato interno ore 12
-11. Fare il lancio
+10. Applicare 50g lato interno ore 12
+11. Lancio
+
 12. Togliere il peso
+
 13. Ruotare fino a 50 lato destro
-14. Applicare 50 g lato esterno ore 12
-15. Fare il lancio
-16. Fine con ritorno automatico
+14. Applicare 50g lato esterno ore 12
+15. Lancio
 
-Uscita anticipata: P5.`;
+16. Fine → ritorno automatico
+
+Uscita anticipata:
+- premere P5`;
 }
 
-function calibrationTouch(model) {
-  return `Procedura completa di calibrazione ${model}.
+function modalitaServizio(model) {
+  if (!model) {
+    return `Indica il modello preciso della equilibratrice Cormach e ti do la procedura corretta.`;
+  }
 
-Materiale necessario:
-- ruota equilibrata con cerchio in acciaio 14"–16"
-- larghezza 5"–5.5"
-- peso da 50 g
-- non usare cerchi in alluminio
+  if (MODELLI_SENZA_MONITOR.includes(model)) {
+    return `Per entrare in modalità servizio su ${model}:
 
-1. Accedere al menu programmi
-2. Selezionare calibrazione CAR/SUV
-3. Confermare a display
-4. Togliere ruota e accessori
-5. Abbassare carter e fare il lancio
-6. Montare la ruota
-7. Inserire distanza, larghezza e diametro
-8. Abbassare carter e fare il lancio
-9. Ruotare fino a 50 lato sinistro
-10. Applicare 50 g lato interno ore 12
-11. Fare il lancio
-12. Togliere il peso
-13. Ruotare fino a 50 lato destro
-14. Applicare 50 g lato esterno ore 12
-15. Fare il lancio
-16. Fine con ritorno automatico
+1. Accendere la macchina
+2. Togliere ruota e accessori
+3. Premere F + P3
+4. Entrare in modalità servizio
 
-Essendo una touch, segui sempre la procedura guidata a display. Non usare la sequenza tasti delle MEC senza monitor.`;
+Per uscire:
+- F + P3`;
+  }
+
+  if (MODELLI_MONITOR.includes(model) || MODELLI_TOUCH.includes(model)) {
+    return `Su ${model} non usare la procedura con tasti delle MEC senza monitor.
+
+Per queste versioni la gestione è guidata da display. Entra dal menu programmi e seleziona la funzione tecnica o la calibrazione richiesta. Se mi dici il sintomo preciso ti do la procedura corretta.`;
+  }
+
+  return modelloNonGestito();
 }
 
-function hasUnknownMec(text) {
-  const normalized = normalize(text);
-  return normalized.includes('MEC') && !detectModel(text);
+function diagnosiTroppiPesi(model) {
+  return `Su ${model || 'questa equilibratrice'} controlla in ordine:
+
+- centraggio ruota
+- cono corretto
+- flangia o adattatore corretto
+- albero pulito
+- battute pulite
+- macchina in piano
+- dati ruota corretti
+- assenza pesi residui
+
+Se continua a richiedere troppi pesi, verifica anche il matching:
+smonta il pneumatico e valuta di ruotarlo sul cerchio per compensare meglio pneumatico e cerchio.
+
+Se tutto è corretto:
+possibile necessità di calibrazione.`;
 }
 
-function genericHelpReply() {
-  const remembered = context.model ? `Modello in memoria: ${context.model}. ` : '';
-  return `${remembered}Posso aiutarti su:
+function diagnosiErr025(model) {
+  return `Su ${model || 'questa MEC'} l'Err 025 richiede di ripetere le verifiche base della calibrazione.
+
+Controlla:
+- ruota campione corretta
+- cerchio in acciaio
+- peso da 50 g corretto
+- dati ruota inseriti bene
+- applicazione del peso esattamente a ore 12
+- macchina stabile e pulita
+
+Poi ripeti la procedura completa di calibrazione.`;
+}
+
+function rispostaGenericaConModello(model) {
+  return `${model} rilevata.
+
+Posso aiutarti con:
 - calibrazione o taratura
 - troppi pesi o vibrazioni
 - modalità servizio
-- indicazioni per contatto assistenza
+- contatto assistenza
 
-Scrivimi modello e sintomo in modo diretto.`;
+Scrivi il sintomo in modo diretto.`;
 }
 
-function buildReply(text) {
-  updateContext(text);
-  const model = context.model;
+function getCalibrationByModel(model) {
+  if (!model) return `Indica il modello preciso della macchina e ti fornisco la procedura completa.`;
+  if (MODELLI_SENZA_MONITOR.includes(model)) return calibrazioneSenzaMonitor(model);
+  if (MODELLI_MONITOR.includes(model) || MODELLI_TOUCH.includes(model)) return calibrazioneMonitor(model);
+  return modelloNonGestito();
+}
 
-  if (containsAny(text, SALES_KEYWORDS)) return salesReply();
-  if (containsAny(text, CONTACT_KEYWORDS)) return directSupportReply();
-  if (hasUnknownMec(text)) return unsupportedReply();
+function engine(text) {
+  const clean = text.trim();
+  const modelFound = detectModel(clean);
+  const matricolaFound = extractMatricola(clean);
 
-  if (containsAny(text, ERR025_KEYWORDS)) return err025Reply(model);
-  if (containsAny(text, SERVICE_MODE_KEYWORDS)) return serviceModeReply(model);
-  if (containsAny(text, DIAGNOSIS_KEYWORDS)) return diagnosisChecklist(model);
+  if (matricolaFound) memoria.matricola = matricolaFound;
+  if (modelFound) memoria.modello = modelFound;
+  if (clean.length > 1) memoria.problema = clean;
 
-  if (containsAny(text, CALIBRATION_KEYWORDS)) {
-    if (!model) {
-      return 'Per darti la procedura corretta devo sapere il modello esatto tra MEC 5, MEC 10, MEC 20, MEC 20-P, MEC 810, MEC 810 VDBL ESD, MEC 820, MEC 820 VDL, MEC 820 VDLL, Touch MEC 1000 o Touch MEC 1000-P.';
+  const model = modelFound || memoria.modello;
+
+  if (isCommercialIntent(clean)) {
+    memoria.ultimoIntent = 'commerciale';
+    return rispostaCommerciale();
+  }
+
+  if (modelFound && !isManagedModel(modelFound)) {
+    memoria.ultimoIntent = 'modello_non_gestito';
+    return modelloNonGestito();
+  }
+
+  if (!model && !isSupportContactIntent(clean)) {
+    memoria.ultimoIntent = 'modello_assente';
+    return modelloNonGestito();
+  }
+
+  if (isSupportContactIntent(clean)) {
+    memoria.ultimoIntent = 'assistenza';
+    return rispostaContattoAssistenza();
+  }
+
+  if (isCalibrationIntent(clean)) {
+    memoria.ultimoIntent = 'calibrazione';
+    return getCalibrationByModel(model);
+  }
+
+  if (isServiceModeIntent(clean)) {
+    memoria.ultimoIntent = 'modalita_servizio';
+    return modalitaServizio(model);
+  }
+
+  if (/err\s*0?25/i.test(clean)) {
+    memoria.ultimoIntent = 'err025';
+    return diagnosiErr025(model);
+  }
+
+  if (/troppi pesi|peso troppo|pesi troppo alti/i.test(clean)) {
+    memoria.ultimoIntent = 'troppi_pesi';
+    return diagnosiTroppiPesi(model);
+  }
+
+  if (/vibrazioni|vibra|misura errata|valori strani|errore/i.test(clean)) {
+    memoria.ultimoIntent = 'diagnosi_rapida';
+    return diagnosiTroppiPesi(model);
+  }
+
+  if (isConfirmText(clean) && memoria.ultimoIntent) {
+    switch (memoria.ultimoIntent) {
+      case 'calibrazione':
+        return getCalibrationByModel(model);
+      case 'troppi_pesi':
+      case 'diagnosi_rapida':
+        return diagnosiTroppiPesi(model);
+      case 'modalita_servizio':
+        return modalitaServizio(model);
+      case 'assistenza':
+        return rispostaContattoAssistenza();
+      default:
+        return rispostaGenericaConModello(model);
     }
-    if (['MEC 5', 'MEC 10', 'MEC 20', 'MEC 20-P'].includes(model)) return calibrationNoMonitor(model);
-    if (['MEC 810', 'MEC 810 VDBL ESD', 'MEC 820', 'MEC 820 VDL', 'MEC 820 VDLL'].includes(model)) return calibrationMonitor(model);
-    if (['TOUCH MEC 1000', 'TOUCH MEC 1000-P'].includes(model)) return calibrationTouch(model);
   }
 
-  if (model) {
-    return `${model} rilevata. Descrivi il sintomo in modo diretto.
-
-Posso aiutarti con:
-- calibrazione
-- troppi pesi o vibrazioni
-- modalità servizio
-- contatto assistenza`;
-  }
-
-  return genericHelpReply();
+  return rispostaGenericaConModello(model);
 }
 
 async function sendMessage() {
   const text = inputEl.value.trim();
-  if (!text) return;
+  if (!text || isLoading) return;
 
   suggestEl.style.display = 'none';
   addMsg('user', text);
   inputEl.value = '';
   inputEl.style.height = 'auto';
+
+  isLoading = true;
   sendBtn.disabled = true;
   showTyping();
 
-  await new Promise(resolve => setTimeout(resolve, 320));
-  const reply = buildReply(text);
-
-  removeTyping();
-  addMsg('ai', reply);
-  sendBtn.disabled = false;
-  inputEl.focus();
+  setTimeout(() => {
+    const reply = engine(text);
+    removeTyping();
+    addMsg('ai', reply);
+    isLoading = false;
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }, 250);
 }
 </script>
 </body>
