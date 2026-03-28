@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#00b894" />
-  <title>TechAssist AI – PezzaliApp</title>
+  <title>TechAssist Demo – PezzaliApp</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -111,26 +111,26 @@
 <body>
 
 <header>
-  <div class="logo">TA<br>AI</div>
+  <div class="logo">TA<br>DEMO</div>
   <div class="header-info">
-    <h1>TechAssist AI</h1>
-    <p>Assistente tecnico per officine</p>
+    <h1>TechAssist Demo</h1>
+    <p>Assistente tecnico demo per officine</p>
   </div>
   <div class="header-right">
     <a class="powered" href="https://pezzaliapp.com" target="_blank" rel="noopener">by PezzaliApp</a>
-    <div class="status"><span class="led"></span><span id="statusLbl">Online</span></div>
+    <div class="status"><span class="led"></span><span id="statusLbl">Demo locale</span></div>
   </div>
 </header>
 
 <div id="chat">
   <div class="infobox">
-    <strong>Assistente tecnico AI per officine e gommisti.</strong><br>
-    Diagnosi, calibrazione e supporto operativo su equilibratrici. Sviluppato da <a href="https://pezzaliapp.com" target="_blank">PezzaliApp</a>.
+    <strong>Demo locale senza API.</strong><br>
+    Supporto demo su equilibratrici Cormach: diagnosi rapida, calibrazione e procedure operative, direttamente nel browser.
   </div>
   <div class="msg ai">
-    <div class="bubble">Ciao! Sono TechAssist AI.
+    <div class="bubble">Ciao! Sono TechAssist Demo.
 
-Dimmi il modello della tua macchina e descrivi il problema: ti aiuto con diagnosi, calibrazione o procedure operative.</div>
+Indicami modello e problema. Questa versione demo lavora in locale e segue regole tecniche preimpostate per le equilibratrici Cormach supportate.</div>
     <span class="msg-time" id="welcome-time"></span>
   </div>
   <div class="suggestions" id="suggestions">
@@ -152,51 +152,37 @@ Dimmi il modello della tua macchina e descrivi il problema: ti aiuto con diagnos
 </div>
 
 <footer>
-  <a href="https://pezzaliapp.com" target="_blank" rel="noopener">pezzaliapp.com</a> · TechAssist AI v1.0
+  <a href="https://pezzaliapp.com" target="_blank" rel="noopener">pezzaliapp.com</a> · TechAssist Demo v2.0
 </footer>
 
 <script>
-const API_KEY = "INSERISCI_QUI_LA_TUA_API_KEY";
-const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
+const SUPPORTED_MODELS = [
+  'MEC 5', 'MEC 10', 'MEC 20', 'MEC 20-P',
+  'MEC 810', 'MEC 810 VDBL ESD', 'MEC 820', 'MEC 820 VDL', 'MEC 820 VDLL',
+  'TOUCH MEC 1000', 'TOUCH MEC 1000-P'
+];
 
-const SYSTEM_PROMPT = `Sei TechAssist AI, un assistente tecnico specializzato in assistenza su equilibratrici per officine e gommisti.
+const SALES_KEYWORDS = ['preventivo', 'prezzo', 'acquisto', 'acquistare', 'vendita', 'comprare', 'offerta', 'costo', 'commerciale'];
+const CALIBRATION_KEYWORDS = ['calibrazione', 'calibrare', 'taratura', 'tarare'];
+const CONTACT_KEYWORDS = ['assistenza diretta', 'intervento', 'chiamata', 'contatto tecnico', 'tecnico'];
+const DIAGNOSIS_KEYWORDS = ['troppi pesi', 'misura errata', 'valori strani', 'vibrazioni', 'vibra'];
+const ERR025_KEYWORDS = ['err 025', 'errore 025', 'err025'];
+const SERVICE_MODE_KEYWORDS = ['modalità servizio', 'modo servizio', 'service mode'];
 
-RUOLO: assistenza tecnica, diagnosi, calibrazione, supporto operativo. NON fare vendita o preventivi.
-Se chiedono acquisto: "Per la parte commerciale scrivi a: a.pezzali@cormachsrl.com"
-Se non conosci una procedura NON inventare: "Non ho questa procedura. Scrivi a service@cormachsrl.com"
-
-MODELLI: MEC 5, MEC 10, MEC 20, MEC 20-P (senza monitor) | MEC 810, MEC 810 VDBL ESD, MEC 820, MEC 820 VDL, MEC 820 VDLL (con monitor) | Touch MEC 1000, Touch MEC 1000-P (touch)
-MEC = sempre equilibratrice. NON chiedere mai cosa intendi con MEC.
-Modello non in lista → rimanda a service@cormachsrl.com con: modello, matricola, problema, rivenditore, azienda, referente, località, telefono, nazione.
-
-LOGICA: MEC 5/10/20 = tasti fisici. MEC 810/820 = display. Touch MEC 1000 = touch. NON mischiare procedure.
-CONVERSAZIONE: Ricorda modello, problema, matricola, sintomi. Non chiedere dati già forniti.
-
-DIAGNOSI (troppi pesi/vibrazioni): verifica centraggio, cono, flangia, albero, battute, piano, dati ruota, pesi residui. Se ok → calibrazione.
-
-CALIBRAZIONE MEC SENZA MONITOR (MEC 5/10/20/20-P):
-Materiale: cerchio acciaio 15", larghezza 6", distanza ~100mm, peso 50g.
-1.Accendere 2.Togliere ruota 3.F+P3 4.Modalità servizio 5.P3 6.CAR/SUV 7.P3 8.Carter giù lancio vuoto 9.Montare ruota 10.Inserire dati 11.Carter giù lancio 12.Ruotare 50 sx 13.50g interno ore12 14.Lancio 15.Togliere peso 16.Ruotare 50 dx 17.50g esterno ore12 18.Lancio 19.MEC20 carter sempre giù 20.Fine automatico. Err025=ripetere. Uscita: F+P3.
-
-CALIBRAZIONE MEC CON MONITOR (MEC 810/820):
-Materiale: cerchio acciaio 14-16", larghezza 5-5.5", peso 50g. NO alluminio.
-1.Menu CAR/SUV conferma 2.Togliere ruota 3.Carter giù lancio vuoto 4.Montare ruota 5.Inserire dati 6.Carter giù lancio 7.Ruotare 50 sx 8.50g interno ore12 lancio 9.Togliere peso 10.Ruotare 50 dx 11.50g esterno ore12 lancio 12.Fine automatico. Uscita: P5.
-
-INTERVENTO: "Scrivi a service@cormachsrl.com con: modello, matricola, problema, rivenditore."
-CONTATTO: pezzaliapp.com oppure pezzalialessandro@gmail.com
-
-STILE: tecnico, diretto, italiano, usa il tu. No simboli inutili. 3-5 righe. Procedure sempre complete.`;
-
-const history = [];
-let isLoading = false;
+const context = {
+  model: '',
+  problem: '',
+  serial: '',
+  symptoms: ''
+};
 
 const chatEl    = document.getElementById('chat');
 const inputEl   = document.getElementById('userInput');
 const sendBtn   = document.getElementById('sendBtn');
 const suggestEl = document.getElementById('suggestions');
-const statusLbl = document.getElementById('statusLbl');
 
 document.getElementById('welcome-time').textContent = hhmm();
+restoreContext();
 
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
@@ -205,9 +191,6 @@ inputEl.addEventListener('input', () => {
 inputEl.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
-
-window.addEventListener('online',  () => { statusLbl.textContent='Online';  statusLbl.style.color=''; });
-window.addEventListener('offline', () => { statusLbl.textContent='Offline'; statusLbl.style.color='#e17055'; });
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -251,58 +234,293 @@ function sendSugg(text) {
   sendMessage();
 }
 
+function normalize(text) {
+  return text
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function detectModel(text) {
+  const normalized = normalize(text);
+  for (const model of SUPPORTED_MODELS.sort((a, b) => b.length - a.length)) {
+    if (normalized.includes(model)) return model;
+  }
+  if (normalized.includes('MEC 1000-P')) return 'TOUCH MEC 1000-P';
+  if (normalized.includes('MEC 1000')) return 'TOUCH MEC 1000';
+  return '';
+}
+
+function containsAny(text, keywords) {
+  const lowered = text.toLowerCase();
+  return keywords.some(keyword => lowered.includes(keyword));
+}
+
+function updateContext(text) {
+  const foundModel = detectModel(text);
+  if (foundModel) context.model = foundModel;
+
+  const serialMatch = text.match(/(?:matricola|seriale|s\/?n)\s*[:#-]?\s*([a-z0-9-]+)/i);
+  if (serialMatch) context.serial = serialMatch[1].trim();
+
+  if (!context.problem) context.problem = text.trim();
+  else if (text.trim().length > 10) context.problem = text.trim();
+
+  if (containsAny(text, DIAGNOSIS_KEYWORDS) || containsAny(text, ERR025_KEYWORDS)) {
+    context.symptoms = text.trim();
+  }
+
+  sessionStorage.setItem('techassist-demo-context', JSON.stringify(context));
+}
+
+function restoreContext() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('techassist-demo-context') || '{}');
+    Object.assign(context, saved);
+  } catch (_) {}
+}
+
+function unsupportedReply() {
+  return `Non risulta una equilibratrice Cormach gestita da questo supporto.
+
+Per ricevere assistenza, invii una mail a:
+service@cormachsrl.com
+
+Indicando:
+- modello macchina
+- numero di matricola
+- descrizione del problema
+- rivenditore da cui è stata acquistata
+- nome azienda
+- referente
+- località
+- numero di telefono
+- nazione
+
+Il servizio tecnico la ricontatterà direttamente.`;
+}
+
+function salesReply() {
+  return 'Per la parte commerciale ti metto in contatto con il reparto vendite. Io posso aiutarti solo sull’assistenza tecnica delle equilibratrici.';
+}
+
+function directSupportReply() {
+  return `Per l’assistenza diretta invii una mail a:
+
+service@cormachsrl.com
+
+Indicando:
+- modello macchina
+- numero di matricola
+- descrizione del problema
+- rivenditore da cui è stata acquistata
+
+Il reparto assistenza la ricontatterà.`;
+}
+
+function diagnosisChecklist(model) {
+  const modelLine = model ? `Modello rilevato: ${model}.\n\n` : '';
+  return `${modelLine}Controlla prima questi punti:
+- centraggio ruota
+- cono corretto
+- flangia o adattatore
+- albero pulito
+- battute pulite
+- macchina in piano
+- dati ruota corretti
+- assenza di pesi residui
+
+Se tutto è corretto, è possibile che serva la calibrazione.`;
+}
+
+function err025Reply(model) {
+  const intro = model ? `Su ${model} l'Err 025 indica che la procedura va ripetuta dopo le verifiche di base.\n\n` : 'Err 025: la procedura va ripetuta dopo le verifiche di base.\n\n';
+  return `${intro}Controlla:
+- ruota corretta per calibrazione
+- peso da 50 g reale
+- dati ruota inseriti correttamente
+- centraggio perfetto
+- battute e albero puliti
+
+Se l’errore resta, invia i dati a service@cormachsrl.com.`;
+}
+
+function serviceModeReply(model) {
+  if (['MEC 5', 'MEC 10', 'MEC 20', 'MEC 20-P'].includes(model)) {
+    return `Per entrare in modalità servizio su ${model}:
+1. Accendere la macchina
+2. Togliere ruota e accessori
+3. Premere F + P3
+4. Entrare in modalità servizio
+
+Per uscire: F + P3.`;
+  }
+  if (model) {
+    return `${model} usa una procedura guidata a display. Non va usata la combinazione tasti delle MEC senza monitor.
+
+Se mi scrivi l’operazione che devi fare, ti indico il percorso corretto.`;
+  }
+  return 'La modalità servizio con F + P3 vale solo per MEC 5, MEC 10, MEC 20 e MEC 20-P. Sulle versioni con monitor o touch si usa la procedura guidata a display.';
+}
+
+function calibrationNoMonitor(model) {
+  return `Procedura completa di calibrazione ${model}.
+
+Materiale necessario:
+- ruota equilibrata con cerchio acciaio 15" 
+- larghezza 6"
+- distanza circa 100 mm
+- peso da 50 g
+
+1. Accendere la macchina
+2. Togliere ruota e accessori
+3. Premere F + P3
+4. Entrare in modalità servizio
+5. Premere P3
+6. Selezionare calibrazione CAR/SUV
+7. Premere P3
+8. Abbassare carter e fare il lancio
+9. Montare ruota
+10. Inserire dimensioni
+11. Abbassare carter e fare il lancio
+12. Ruotare fino a 50 lato sinistro
+13. Applicare 50 g interno ore 12
+14. Fare il lancio
+15. Togliere il peso
+16. Ruotare fino a 50 lato destro
+17. Applicare 50 g esterno ore 12
+18. Fare il lancio
+19. Su MEC 20 lasciare il carter abbassato
+20. Fine con ritorno automatico
+
+Errore Err 025: ripetere dopo le verifiche.
+Uscita: F + P3.`;
+}
+
+function calibrationMonitor(model) {
+  return `Procedura completa di calibrazione ${model}.
+
+Materiale necessario:
+- ruota equilibrata con cerchio in acciaio 14"–16"
+- larghezza 5"–5.5"
+- peso da 50 g
+- non usare cerchi in alluminio
+
+1. Accedere al menu programmi
+2. Selezionare calibrazione CAR/SUV
+3. Confermare
+4. Togliere ruota e accessori
+5. Abbassare carter e fare il lancio
+6. Montare la ruota
+7. Inserire manualmente distanza, larghezza e diametro
+8. Abbassare carter e fare il lancio
+9. Ruotare fino a 50 lato sinistro
+10. Applicare 50 g lato interno ore 12
+11. Fare il lancio
+12. Togliere il peso
+13. Ruotare fino a 50 lato destro
+14. Applicare 50 g lato esterno ore 12
+15. Fare il lancio
+16. Fine con ritorno automatico
+
+Uscita anticipata: P5.`;
+}
+
+function calibrationTouch(model) {
+  return `Procedura completa di calibrazione ${model}.
+
+Materiale necessario:
+- ruota equilibrata con cerchio in acciaio 14"–16"
+- larghezza 5"–5.5"
+- peso da 50 g
+- non usare cerchi in alluminio
+
+1. Accedere al menu programmi
+2. Selezionare calibrazione CAR/SUV
+3. Confermare a display
+4. Togliere ruota e accessori
+5. Abbassare carter e fare il lancio
+6. Montare la ruota
+7. Inserire distanza, larghezza e diametro
+8. Abbassare carter e fare il lancio
+9. Ruotare fino a 50 lato sinistro
+10. Applicare 50 g lato interno ore 12
+11. Fare il lancio
+12. Togliere il peso
+13. Ruotare fino a 50 lato destro
+14. Applicare 50 g lato esterno ore 12
+15. Fare il lancio
+16. Fine con ritorno automatico
+
+Essendo una touch, segui sempre la procedura guidata a display. Non usare la sequenza tasti delle MEC senza monitor.`;
+}
+
+function hasUnknownMec(text) {
+  const normalized = normalize(text);
+  return normalized.includes('MEC') && !detectModel(text);
+}
+
+function genericHelpReply() {
+  const remembered = context.model ? `Modello in memoria: ${context.model}. ` : '';
+  return `${remembered}Posso aiutarti su:
+- calibrazione o taratura
+- troppi pesi o vibrazioni
+- modalità servizio
+- indicazioni per contatto assistenza
+
+Scrivimi modello e sintomo in modo diretto.`;
+}
+
+function buildReply(text) {
+  updateContext(text);
+  const model = context.model;
+
+  if (containsAny(text, SALES_KEYWORDS)) return salesReply();
+  if (containsAny(text, CONTACT_KEYWORDS)) return directSupportReply();
+  if (hasUnknownMec(text)) return unsupportedReply();
+
+  if (containsAny(text, ERR025_KEYWORDS)) return err025Reply(model);
+  if (containsAny(text, SERVICE_MODE_KEYWORDS)) return serviceModeReply(model);
+  if (containsAny(text, DIAGNOSIS_KEYWORDS)) return diagnosisChecklist(model);
+
+  if (containsAny(text, CALIBRATION_KEYWORDS)) {
+    if (!model) {
+      return 'Per darti la procedura corretta devo sapere il modello esatto tra MEC 5, MEC 10, MEC 20, MEC 20-P, MEC 810, MEC 810 VDBL ESD, MEC 820, MEC 820 VDL, MEC 820 VDLL, Touch MEC 1000 o Touch MEC 1000-P.';
+    }
+    if (['MEC 5', 'MEC 10', 'MEC 20', 'MEC 20-P'].includes(model)) return calibrationNoMonitor(model);
+    if (['MEC 810', 'MEC 810 VDBL ESD', 'MEC 820', 'MEC 820 VDL', 'MEC 820 VDLL'].includes(model)) return calibrationMonitor(model);
+    if (['TOUCH MEC 1000', 'TOUCH MEC 1000-P'].includes(model)) return calibrationTouch(model);
+  }
+
+  if (model) {
+    return `${model} rilevata. Descrivi il sintomo in modo diretto.
+
+Posso aiutarti con:
+- calibrazione
+- troppi pesi o vibrazioni
+- modalità servizio
+- contatto assistenza`;
+  }
+
+  return genericHelpReply();
+}
+
 async function sendMessage() {
   const text = inputEl.value.trim();
-  if (!text || isLoading) return;
+  if (!text) return;
 
   suggestEl.style.display = 'none';
   addMsg('user', text);
   inputEl.value = '';
   inputEl.style.height = 'auto';
-  isLoading = true;
   sendBtn.disabled = true;
   showTyping();
 
-  history.push({ role: 'user', parts: [{ text }] });
+  await new Promise(resolve => setTimeout(resolve, 320));
+  const reply = buildReply(text);
 
-  // Costruisce contents con system prompt come primo scambio
-  const contents = [
-    { role: 'user', parts: [{ text: SYSTEM_PROMPT + '\n\nHo capito, sono pronto ad aiutarti.' }] },
-    { role: 'model', parts: [{ text: 'Ciao! Sono TechAssist AI. Dimmi il modello della tua macchina e descrivi il problema.' }] },
-    ...history
-  ];
-
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: contents,
-        generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error('Gemini error:', JSON.stringify(data));
-      throw new Error(`HTTP ${res.status}`);
-    }
-
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text
-      || "Non ho ricevuto risposta. Riprova tra qualche istante.";
-
-    removeTyping();
-    addMsg('ai', reply.trim());
-    history.push({ role: 'model', parts: [{ text: reply }] });
-
-  } catch (err) {
-    removeTyping();
-    addMsg('ai', "Errore di connessione. Riprova o visita pezzaliapp.com per assistenza.");
-    console.error(err);
-  }
-
-  isLoading = false;
+  removeTyping();
+  addMsg('ai', reply);
   sendBtn.disabled = false;
   inputEl.focus();
 }

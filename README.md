@@ -1,108 +1,76 @@
-# TechAssist AI by PezzaliApp
+# TechAssist Demo by PezzaliApp
 
-Assistente tecnico AI per officine e gommisti.  
-Sviluppato da **PezzaliApp** – pezzaliapp.com
+Demo PWA locale per assistenza tecnica su equilibratrici Cormach.
+
+Questa versione:
+- non usa API esterne
+- non usa Google AI Studio
+- non usa OpenAI
+- non richiede backend
+- gira direttamente nel browser
 
 ---
 
-## Struttura repository (pubblica su GitHub)
+## Struttura repository
 
-```
-techassist-ai/
-├── index.html        ← PWA principale (zero riferimenti interni)
-├── offline.html      ← Pagina offline
-├── manifest.json     ← Config PWA
-├── sw.js             ← Service Worker
+```text
+techassist-demo/
+├── index.html
+├── offline.html
+├── manifest.json
+├── sw.js
 └── icons/
-    ├── icon-192.png  ← Da creare (192×192 px)
-    └── icon-512.png  ← Da creare (512×512 px)
-```
-
-**`cloudflare-worker.js` NON va nella repo GitHub.**  
-Contiene la logica tecnica e i contatti interni. Va deployato solo su Cloudflare.
-
----
-
-## STEP 1 – Deploy Cloudflare Worker
-
-1. Vai su https://workers.cloudflare.com → Login (account free)
-2. **Create Worker** → nome es. `techassist-proxy`
-3. Cancella codice di esempio, incolla tutto `cloudflare-worker.js`
-4. **Save and Deploy**
-5. **Settings → Variables → Add variable**:
-   - Nome: `GEMINI_API_KEY`
-   - Valore: la tua API key Google Gemini
-   - ✅ Clicca **Encrypt**
-6. Copia l'URL del Worker: `https://techassist-proxy.tuonome.workers.dev`
-
----
-
-## STEP 2 – Configura index.html
-
-Apri `index.html`, riga con `WORKER_URL`, sostituisci:
-
-```js
-const WORKER_URL = "https://techassist-proxy.IL-TUO-NOME.workers.dev";
+    ├── icon-192.png
+    └── icon-512.png
 ```
 
 ---
 
-## STEP 3 – Crea le icone PWA
+## Come funziona
 
-Due PNG nella cartella `icons/`:
-- `icon-192.png` → 192×192 px
-- `icon-512.png` → 512×512 px
+La demo usa regole locali JavaScript per:
+- riconoscere i modelli supportati
+- bloccare richieste commerciali
+- mostrare procedure di calibrazione
+- guidare la diagnosi rapida
+- mantenere in memoria modello e sintomi nella sessione
 
-Usa https://realfavicongenerator.net o crea un'icona con il logo PezzaliApp.
-
----
-
-## STEP 4 – Deploy GitHub Pages
-
-```bash
-git init
-git add .
-git commit -m "TechAssist AI v1.0 by PezzaliApp"
-git remote add origin https://github.com/pezzaliapp/techassist-ai.git
-git push -u origin main
-```
-
-Attiva GitHub Pages:  
-**repo → Settings → Pages → Source: main / root**
-
-URL finale: `https://pezzaliapp.github.io/techassist-ai/`
+Non genera testo con un modello AI remoto.
 
 ---
 
-## STEP 5 – Dominio custom (opzionale)
+## Modelli gestiti
 
-Per usare `https://techassist.pezzaliapp.com`:
-
-1. GitHub Pages → Custom domain → `techassist.pezzaliapp.com`
-2. DNS: aggiungi CNAME `techassist` → `pezzaliapp.github.io`
-3. Nel Worker, aggiungi `https://techassist.pezzaliapp.com` a `ALLOWED_ORIGINS`
-
----
-
-## Aggiungere nuovi prodotti al prompt
-
-Il system prompt è nel `cloudflare-worker.js`, variabile `SYSTEM_PROMPT`.  
-Le sezioni marcate `[da integrare nel prossimo step]` sono già pronte per:
-- Smontagomme
-- Ponti sollevatori Cascos C-series
-- Calibrazione Touch MEC 1000
-
-Incolla le procedure nelle sezioni corrispondenti e ri-deploya il Worker.  
-**Il frontend GitHub non va mai modificato per aggiornare le procedure.**
+- MEC 5
+- MEC 10
+- MEC 20
+- MEC 20-P
+- MEC 810
+- MEC 810 VDBL ESD
+- MEC 820
+- MEC 820 VDL
+- MEC 820 VDLL
+- Touch MEC 1000
+- Touch MEC 1000-P
 
 ---
 
-## Limiti piani gratuiti
+## Pubblicazione su GitHub Pages
 
-| Servizio | Limite free |
-|---|---|
-| Cloudflare Workers | 100.000 req/giorno |
-| Gemini 2.0 Flash | 1.500 req/giorno, 1M token/min |
-| GitHub Pages | Illimitato (repo pubblica) |
+1. carica i file nella repo
+2. vai in **Settings → Pages**
+3. scegli **Deploy from branch**
+4. seleziona `main` e cartella `/root`
+5. salva
 
-Tutto gratuito e abbondante per un tool di assistenza tecnica.
+---
+
+## Personalizzazioni future
+
+Puoi aggiornare `index.html` per:
+- aggiungere altri modelli
+- estendere le procedure
+- cambiare testi e suggerimenti iniziali
+- inserire nuove regole tecniche
+
+Non serve alcuna chiave API.

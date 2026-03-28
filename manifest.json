@@ -1,6 +1,6 @@
 {
-  "name": "TechAssist AI by PezzaliApp",
-  "short_name": "TechAssist AI",
+  "name": "TechAssist Demo by PezzaliApp",
+  "short_name": "TechAssist Demo",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#121212",
