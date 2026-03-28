@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#00b894" />
+  <meta name="description" content="TechAssist AI – Assistente tecnico AI per officine e gommisti. Powered by PezzaliApp." />
+  <meta property="og:title" content="TechAssist AI by PezzaliApp" />
+  <meta property="og:description" content="Assistente tecnico AI per officine e gommisti." />
+  <meta property="og:type" content="website" />
+
+  <title>TechAssist AI – PezzaliApp</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:         #121212;
+      --bg2:        #1a1a1a;
+      --bg3:        #222222;
+      --accent:     #00b894;
+      --accent-dim: #00966f;
+      --text:       #f0f0f0;
+      --muted:      #888;
+      --border:     #2a2a2a;
+      --radius:     14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overscroll-behavior: none;
+    }
+
+    body { display: flex; flex-direction: column; }
+
+    /* ── INSTALL BANNER ── */
+    #installBanner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    #installBanner span { flex: 1; }
+    #installBanner button {
+      background: var(--accent); color: #000;
+      border: none; border-radius: 8px;
+      padding: 6px 14px; font-size: 12px;
+      font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer;
+    }
+    #dismissBtn { background: transparent !important; color: var(--muted) !important; padding: 6px 8px !important; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 18px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      width: 38px; height: 38px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 11px; color: #000;
+      flex-shrink: 0; letter-spacing: -0.3px;
+      line-height: 1.1; text-align: center;
+    }
+
+    .header-info h1 { font-size: 15px; font-weight: 600; line-height: 1.2; }
+    .header-info p  { font-size: 11px; color: var(--accent); font-weight: 400; }
+
+    .header-right {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 14px;
+    }
+
+    .powered {
+      font-size: 10px; color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .powered:hover { color: var(--accent); }
+
+    .status {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--muted);
+    }
+    .led {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* ── CHAT ── */
+    #chat {
+      flex: 1; overflow-y: auto;
+      padding: 20px 16px 10px;
+      display: flex; flex-direction: column; gap: 14px;
+      max-width: 800px; width: 100%; margin: 0 auto;
+      scroll-behavior: smooth;
+    }
+    #chat::-webkit-scrollbar { width: 4px; }
+    #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── INFO BOX ── */
+    .infobox {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 12px 15px;
+      font-size: 12px; color: var(--muted); line-height: 1.65;
+    }
+    .infobox strong { color: var(--text); }
+    .infobox a { color: var(--accent); text-decoration: none; }
+    .infobox a:hover { text-decoration: underline; }
+
+    /* ── BUBBLES ── */
+    .msg {
+      display: flex; flex-direction: column; max-width: 78%;
+      animation: fadeUp .22s ease;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(7px)} to{opacity:1;transform:translateY(0)} }
+    .msg.user { align-self:flex-end; align-items:flex-end; }
+    .msg.ai   { align-self:flex-start; align-items:flex-start; }
+
+    .bubble {
+      padding: 11px 15px;
+      border-radius: var(--radius);
+      font-size: 14px; line-height: 1.65;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .msg.user .bubble {
+      background: var(--accent); color: #000; font-weight: 500;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.ai .bubble {
+      background: var(--bg3); color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-time { font-size: 10px; color: var(--muted); margin-top: 4px; padding: 0 3px; }
+
+    /* ── TYPING ── */
+    .typing .bubble { display:flex; align-items:center; gap:5px; padding:14px 17px; }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); animation:bounce 1.1s infinite; }
+    .dot:nth-child(2){animation-delay:.18s} .dot:nth-child(3){animation-delay:.36s}
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+    /* ── SUGGESTIONS ── */
+    .suggestions { display:flex; flex-wrap:wrap; gap:8px; padding:2px 0; }
+    .sugg {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); padding: 6px 13px; border-radius: 20px;
+      font-size: 12px; font-family: 'Poppins', sans-serif;
+      cursor: pointer; transition: all .2s; text-align:left;
+    }
+    .sugg:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* ── INPUT ── */
+    .input-wrap {
+      flex-shrink: 0; max-width: 800px; width: 100%; margin: 0 auto;
+      padding: 8px 16px 20px;
+      background: linear-gradient(transparent, var(--bg) 30%);
+    }
+    .input-box {
+      display:flex; gap:9px; align-items:flex-end;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 9px 11px;
+      transition: border-color .2s;
+    }
+    .input-box:focus-within { border-color: var(--accent); }
+
+    #userInput {
+      flex:1; background:transparent; border:none; outline:none;
+      color:var(--text); font-family:'Poppins',sans-serif;
+      font-size:14px; resize:none;
+      min-height:22px; max-height:110px; line-height:1.5;
+    }
+    #userInput::placeholder { color:var(--muted); }
+
+    #sendBtn {
+      background:var(--accent); border:none; border-radius:10px;
+      width:37px; height:37px;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:background .2s,transform .1s; flex-shrink:0;
+    }
+    #sendBtn:hover  { background:var(--accent-dim); }
+    #sendBtn:active { transform:scale(.92); }
+    #sendBtn:disabled { background:var(--border); cursor:not-allowed; }
+    #sendBtn svg { fill:#000; width:15px; height:15px; }
+
+    .input-hint { font-size:10px; color:var(--muted); text-align:center; margin-top:6px; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center; padding: 8px 16px 12px;
+      font-size: 10px; color: var(--muted); flex-shrink: 0;
+    }
+    footer a { color:var(--accent); text-decoration:none; }
+
+    @media(max-width:520px){
+      .msg { max-width:91%; }
+      .bubble { font-size:13px; }
+      .powered { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- INSTALL BANNER -->
+<div id="installBanner">
+  <span>📲 Installa TechAssist AI come app</span>
+  <button id="installBtn">Installa</button>
+  <button id="dismissBtn">✕</button>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">TA<br>AI</div>
+  <div class="header-info">
+    <h1>TechAssist AI</h1>
+    <p>Assistente tecnico per officine</p>
+  </div>
+  <div class="header-right">
+    <a class="powered" href="https://pezzaliapp.com" target="_blank" rel="noopener">by PezzaliApp</a>
+    <div class="status">
+      <span class="led"></span>
+      <span id="statusLbl">Online</span>
+    </div>
+  </div>
+</header>
+
+<!-- CHAT -->
+<div id="chat">
+
+  <div class="infobox">
+    <strong>Assistente tecnico AI per officine e gommisti.</strong><br>
+    Diagnosi, calibrazione e supporto operativo su equilibratrici. Sviluppato da <a href="https://pezzaliapp.com" target="_blank">PezzaliApp</a>.
+  </div>
+
+  <div class="msg ai">
+    <div class="bubble">Ciao! Sono TechAssist AI.
+
+Dimmi il modello della tua macchina e descrivi il problema: ti aiuto con diagnosi, calibrazione o procedure operative.</div>
+    <span class="msg-time" id="welcome-time"></span>
+  </div>
+
+  <div class="suggestions" id="suggestions">
+    <button class="sugg" onclick="sendSugg('Come si calibra la MEC 820?')">Calibrazione MEC 820</button>
+    <button class="sugg" onclick="sendSugg('La MEC 20 richiede troppi pesi, cosa controllo?')">Troppi pesi MEC 20</button>
+    <button class="sugg" onclick="sendSugg('Come entro in modalità servizio sulla MEC 10?')">Modalità servizio MEC 10</button>
+    <button class="sugg" onclick="sendSugg('Errore Err 025 sulla MEC 5, come risolvo?')">Errore Err 025</button>
+  </div>
+
+</div>
+
+<!-- INPUT -->
+<div class="input-wrap">
+  <div class="input-box">
+    <textarea id="userInput" placeholder="Modello e problema…" rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()" title="Invia">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+  <p class="input-hint">Enter per inviare · Shift+Enter per nuova riga</p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <a href="https://pezzaliapp.com" target="_blank" rel="noopener">pezzaliapp.com</a> · TechAssist AI v1.0
+</footer>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+// Sostituisci con l'URL del tuo Cloudflare Worker dopo il deploy
+const WORKER_URL = "https://cormach-proxy.IL-TUO-NOME.workers.dev";
+
+// ── STATE ─────────────────────────────────────────────────
+const history = [];
+let isLoading = false;
+let deferredPrompt = null;
+
+// ── DOM ───────────────────────────────────────────────────
+const chatEl    = document.getElementById('chat');
+const inputEl   = document.getElementById('userInput');
+const sendBtn   = document.getElementById('sendBtn');
+const suggestEl = document.getElementById('suggestions');
+const statusLbl = document.getElementById('statusLabel') || document.getElementById('statusLbl');
+
+document.getElementById('welcome-time').textContent = hhmm();
+
+// auto-resize
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + 'px';
+});
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// online/offline
+window.addEventListener('online',  () => setStatus('Online', ''));
+window.addEventListener('offline', () => setStatus('Offline', '#e17055'));
+function setStatus(txt, color) {
+  if (statusLbl) { statusLbl.textContent = txt; statusLbl.style.color = color; }
+}
+
+// PWA install
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('installBanner').style.display = 'none';
+  deferredPrompt = null;
+});
+document.getElementById('dismissBtn').addEventListener('click', () => {
+  document.getElementById('installBanner').style.display = 'none';
+});
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(console.error);
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function hhmm() {
+  return new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
+}
+
+function addMsg(role, text) {
+  const wrap   = document.createElement('div');
+  wrap.className = `msg ${role}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  const time = document.createElement('span');
+  time.className = 'msg-time';
+  time.textContent = hhmm();
+  wrap.appendChild(bubble);
+  wrap.appendChild(time);
+  chatEl.appendChild(wrap);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function showTyping() {
+  const w = document.createElement('div');
+  w.className = 'msg ai typing'; w.id = 'typing';
+  w.innerHTML = `<div class="bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+  chatEl.appendChild(w);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function sendSugg(text) {
+  suggestEl.style.display = 'none';
+  inputEl.value = text;
+  sendMessage();
+}
+
+// ── SEND ──────────────────────────────────────────────────
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text || isLoading) return;
+
+  suggestEl.style.display = 'none';
+  addMsg('user', text);
+  inputEl.value = ''; inputEl.style.height = 'auto';
+  isLoading = true; sendBtn.disabled = true;
+  showTyping();
+
+  history.push({ role: 'user', parts: [{ text }] });
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // Inviamo solo la history — il system prompt lo inietta il Worker
+      body: JSON.stringify({ contents: history })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data  = await res.json();
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text
+      || "Non ho ricevuto risposta. Riprova tra qualche istante.";
+
+    removeTyping();
+    addMsg('ai', reply.trim());
+    history.push({ role: 'model', parts: [{ text: reply }] });
+
+  } catch (err) {
+    removeTyping();
+    addMsg('ai', "Errore di connessione. Riprova o visita pezzaliapp.com per assistenza.");
+    console.error(err);
+  }
+
+  isLoading = false; sendBtn.disabled = false;
+  inputEl.focus();
+}
+</script>
+</body>
+</html>
