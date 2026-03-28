@@ -290,9 +290,8 @@ Dimmi il modello della tua macchina e descrivi il problema: ti aiuto con diagnos
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────
-// Sostituisci con l'URL del tuo Cloudflare Worker dopo il deploy
-const WORKER_URL = "https://script.google.com/macros/s/AIzaSyAXLUYn2p6f_DzcbeOORp0HENqtX7QI3TA";
-
+const GEMINI_API_KEY = "AIzaSyAXLUYn2p6f_DzcbeOORp0HENqtX7QI3TA";
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 // ── STATE ─────────────────────────────────────────────────
 const history = [];
 let isLoading = false;
